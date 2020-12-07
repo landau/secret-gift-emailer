@@ -10,7 +10,10 @@ import (
 	"mime/quotedprintable"
 	"net/smtp"
 	"os"
+	"syscall"
 	"time"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 const body = `
@@ -26,8 +29,6 @@ Address: {{.Address}}
 <br />
 Please send a gift in the range of $20 by Dec 17th.
 `
-
-var emailTemplate = template.Must(template.New("email").Parse(body))
 
 func createEmailHeaders(from, to, subject string) string {
 	headers := make(map[string]string)
@@ -155,22 +156,32 @@ func assignReceipients(people []person) map[person]person {
 }
 
 func main() {
-	people, err := readPersonCsv("test.csv") // TODO: get from CLI
-
-	if err != nil {
-		panic(err)
-	}
-
-	email := ""    // TODO: get from CLI
-	password := "" // TODO: Get from CLI securely
+	email := os.Getenv("GMAIL_EMAIL")
 	subject := "Secret Hanukkah Gift Exchange"
 
+	fmt.Print("Enter Password: ")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+
+	if err != nil {
+		log.Fatalf("Failed to read in passowrd: %s", err)
+	}
+
+	password := string(bytePassword)
+
+	fileName := os.Getenv("CSV")
+	people, err := readPersonCsv(fileName)
+
+	if err != nil {
+		log.Fatalf("Failed to read in csv: %s", err)
+	}
+
+	emailTemplate := template.Must(template.New("email").Parse(body))
+
 	for fromPerson, toPerson := range assignReceipients(people) {
-		body, err := parseTemplate(emailTemplate, toPerson)
+		emailBody, err := parseTemplate(emailTemplate, toPerson)
 
 		if err != nil {
-			log.Printf("Error creating email body: %s", err)
-			panic(err)
+			log.Fatalf("Error creating email body: %s", err)
 		}
 
 		conf := emailConfig{
@@ -178,17 +189,21 @@ func main() {
 			Password:  password,
 			ToEmail:   fromPerson.Email,
 			Subject:   subject,
-			Body:      body,
+			Body:      emailBody,
 		}
 
-		log.Printf("%v: %v\n", fromPerson.Name, toPerson.Name)
-		err = sendGMail(conf)
+		// Re-enable log if you'e interested in seeing the secret match
+		if os.Getenv("DEBUG") == "true" {
+			log.Printf("%+v", conf)
+		} else {
+			log.Println("NOT HEREE!!!!")
+			// err = sendGMail(conf)
+			if err != nil {
+				log.Fatalf("Error sending email: %s", err)
+			}
 
-		if err != nil {
-			log.Printf("Error sending email: %s", err)
-			panic(err)
+			log.Print("Email Sent Successfully")
 		}
 
-		log.Print("Email Sent Successfully")
 	}
 }
