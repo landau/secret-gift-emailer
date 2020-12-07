@@ -196,14 +196,13 @@ func main() {
 		if os.Getenv("DEBUG") == "true" {
 			log.Printf("%+v", conf)
 		} else {
-			log.Println("NOT HEREE!!!!")
-			// err = sendGMail(conf)
+			err = sendGMail(conf)
+
 			if err != nil {
 				log.Fatalf("Error sending email: %s", err)
 			}
 
 			log.Print("Email Sent Successfully")
 		}
-
 	}
 }
