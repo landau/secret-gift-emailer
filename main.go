@@ -19,7 +19,7 @@ import (
 const body = `
 <h1>Happy Hanukkah!</h1>
 <br />
-<h2>Here is your Secret Hanukkah Exchannge receipient:</h2>
+<h2>Here is your Secret Hanukkah Exchange receipient:</h2>
 <br />
 Name:  {{.Name}}
 <br />
@@ -194,7 +194,7 @@ func main() {
 
 		// Re-enable log if you'e interested in seeing the secret match
 		if os.Getenv("DEBUG") == "true" {
-			log.Printf("%+v", conf)
+			log.Printf("FromEmail: %s, ToEmail: %s, Subject:%s, Body: %s", conf.FromEmail, conf.ToEmail, conf.Subject, conf.Body)
 		} else {
 			err = sendGMail(conf)
 
